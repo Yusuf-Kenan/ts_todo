@@ -5,25 +5,40 @@ type TodoType = { id: number; title: string; is_done: boolean };
 
 export default function TodoPage() {
   const [show, setShow] = useState<boolean>(false);
+  const [editTodo, setEditTodo] = useState<TodoType | null>(null);
   const [todos, setTodos] = useState<TodoType[]>([
     { id: 1, title: "test", is_done: false },
     { id: 2, title: "test 2", is_done: true },
     { id: 3, title: "test 3", is_done: false },
   ]);
+
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const value = Object.fromEntries(data.entries());
-    todos.push({
-      id: todos.length+1,
-      title: value.title as string,
-      is_done: value.is_done ? true : false,
-    });
+
+    if (editTodo) {
+      const foundItem = todos.find((item, index) => {
+        return item.id === editTodo.id;
+      });
+      if (foundItem) {
+        foundItem.title = value.title as string;
+        foundItem.is_done = value.is_done ? true : false;
+      } else {
+        alert("Something went wrong");
+      }
+    } else {
+      todos.push({
+        id: todos.length + 1,
+        title: value.title as string,
+        is_done: value.is_done ? true : false,
+      });
+    }
 
     setTodos([...todos]);
-    handleClose()
+    handleClose();
   };
 
   return (
@@ -40,10 +55,16 @@ export default function TodoPage() {
                 name="title"
                 type="text"
                 placeholder="type your to do..."
+                defaultValue={editTodo ? editTodo.title : ""}
               />
             </Form.Group>
             <Form.Group className="mb-3">
-              <Form.Check name="is_done" type="checkbox" label="Done?" />
+              <Form.Check
+                defaultChecked={editTodo ? editTodo.is_done : false}
+                name="is_done"
+                type="checkbox"
+                label="Done?"
+              />
             </Form.Group>
           </Modal.Body>
           <Modal.Footer>
@@ -63,7 +84,14 @@ export default function TodoPage() {
       <Row>
         <Col sm="12">
           <div className="d-flex my-2 justify-content-end">
-            <Button onClick={handleShow}>ADD</Button>
+            <Button
+              onClick={() => {
+                setEditTodo(null);
+                handleShow();
+              }}
+            >
+              ADD
+            </Button>
           </div>
 
           <Table striped bordered hover>
@@ -83,17 +111,35 @@ export default function TodoPage() {
                     <td>{item.title}</td>
                     <td>
                       <input
+                      onClick={()=>{
+                        todos[index].is_done= !todos[index].is_done
+                        setTodos([...todos])
+                      }}
                         className="me-3"
                         type="checkbox"
                         checked={item.is_done}
                       />
-                      {item.is_done ? "Done" : "Undone"}
+                      {item.is_done ? "Done" : "Do It"}
                     </td>
                     <td>
-                      <Button variant="danger" className="btn btn-sm me-3">
+                      <Button
+                        onClick={() => {
+                          todos.splice(index, 1);
+                          setTodos([...todos]);
+                        }}
+                        variant="danger"
+                        className="btn btn-sm me-3"
+                      >
                         Del
                       </Button>
-                      <Button variant="warning" className="btn btn-sm">
+                      <Button
+                        onClick={() => {
+                          setEditTodo(item);
+                          handleShow();
+                        }}
+                        variant="warning"
+                        className="btn btn-sm"
+                      >
                         Edit
                       </Button>
                     </td>
